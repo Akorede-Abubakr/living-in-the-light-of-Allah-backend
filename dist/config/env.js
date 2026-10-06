@@ -1,0 +1,27 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.config = void 0;
+const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env') });
+exports.config = {
+    port: parseInt(process.env.PORT || '5000', 10),
+    nodeEnv: process.env.NODE_ENV || 'development',
+    mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/brightmind_publishing',
+    jwtSecret: process.env.JWT_SECRET || 'brightmind_default_secret_key_change_in_prod_2026',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    adminUrl: process.env.ADMIN_URL || 'http://localhost:5174',
+    paystack: {
+        secretKey: process.env.PAYSTACK_SECRET_KEY || '',
+        publicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+        mockMode: process.env.PAYSTACK_MOCK_MODE === 'true' || !process.env.PAYSTACK_SECRET_KEY,
+    },
+    storage: {
+        driver: process.env.STORAGE_DRIVER || 'local',
+        uploadDir: process.env.UPLOAD_DIR || 'uploads',
+    },
+};

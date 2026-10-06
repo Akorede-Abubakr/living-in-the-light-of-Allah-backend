@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const reader_controller_1 = require("../controllers/reader.controller");
+const auth_1 = require("../middlewares/auth");
+const router = (0, express_1.Router)();
+router.get('/:bookId/meta', auth_1.optionalAuth, reader_controller_1.ReaderController.getReaderMeta);
+router.get('/:bookId/preview', auth_1.optionalAuth, reader_controller_1.ReaderController.getPreviewPages);
+router.get('/:bookId/page/:pageNumber', auth_1.optionalAuth, reader_controller_1.ReaderController.getPageByNumber);
+router.get('/:bookId/full', auth_1.protect, reader_controller_1.ReaderController.getFullBook);
+exports.default = router;

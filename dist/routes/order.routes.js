@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const order_controller_1 = require("../controllers/order.controller");
+const auth_1 = require("../middlewares/auth");
+const router = (0, express_1.Router)();
+router.post('/initialize', auth_1.protect, order_controller_1.OrderController.initializeOrder);
+router.post('/verify', auth_1.protect, order_controller_1.OrderController.verifyOrder);
+router.post('/webhook', order_controller_1.OrderController.paystackWebhook);
+router.get('/my-orders', auth_1.protect, order_controller_1.OrderController.getMyOrders);
+router.get('/admin', auth_1.protect, auth_1.adminOnly, order_controller_1.OrderController.getAllOrders);
+router.get('/:id', auth_1.protect, order_controller_1.OrderController.getOrderById);
+exports.default = router;
