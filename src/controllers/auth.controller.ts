@@ -11,6 +11,23 @@ const generateToken = (userId: string): string => {
   });
 };
 
+const formatUserResponse = (user: any) => ({
+  id: user._id || user.id,
+  name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+  firstName: user.firstName || (user.name ? user.name.split(' ')[0] : ''),
+  lastName: user.lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : ''),
+  phoneNumber: user.phoneNumber || '',
+  bio: user.bio || '',
+  spiritualFocus: user.spiritualFocus || 'Quranic Wisdom & Classical Philosophy',
+  city: user.city || '',
+  country: user.country || '',
+  preferredReadingMode: user.preferredReadingMode || 'paper',
+  email: user.email,
+  role: user.role,
+  avatar: user.avatar,
+  createdAt: user.createdAt,
+});
+
 const sendTokenResponse = (user: IUser, statusCode: number, res: Response, message: string) => {
   const token = generateToken((user._id as any).toString());
 
@@ -27,23 +44,20 @@ const sendTokenResponse = (user: IUser, statusCode: number, res: Response, messa
     success: true,
     message,
     token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      createdAt: user.createdAt,
-    },
+    user: formatUserResponse(user),
   });
 };
 
 export class AuthController {
   static async register(req: Request, res: Response): Promise<void> {
-    const { name, email, password, confirmPassword } = req.body;
+    const { firstName, lastName, phoneNumber, name, email, password, confirmPassword } = req.body;
 
-    if (!name || !email || !password) {
-      res.status(400).json({ success: false, message: 'Please provide name, email, and password.' });
+    const resolvedFirstName = firstName?.trim() || (name ? name.trim().split(' ')[0] : '');
+    const resolvedLastName = lastName?.trim() || (name ? name.trim().split(' ').slice(1).join(' ') : '');
+    const resolvedName = name?.trim() || `${resolvedFirstName} ${resolvedLastName}`.trim();
+
+    if (!resolvedFirstName || !email || !password) {
+      res.status(400).json({ success: false, message: 'Please provide your first name, email, and password.' });
       return;
     }
 
@@ -64,13 +78,16 @@ export class AuthController {
     }
 
     const user = await User.create({
-      name,
+      name: resolvedName,
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
+      phoneNumber: phoneNumber?.trim() || '',
       email: email.toLowerCase(),
       password,
       role: 'user',
     });
 
-    sendTokenResponse(user, 201, res, 'Registration successful. Welcome to BrightMind Books!');
+    sendTokenResponse(user, 201, res, 'Registration successful. Welcome to Living in the light of Allah!');
   }
 
   static async login(req: Request, res: Response): Promise<void> {
@@ -121,14 +138,7 @@ export class AuthController {
 
     res.status(200).json({
       success: true,
-      user: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        avatar: req.user.avatar,
-        createdAt: req.user.createdAt,
-      },
+      user: formatUserResponse(req.user),
     });
   }
 
@@ -138,7 +148,19 @@ export class AuthController {
       return;
     }
 
-    const { name, avatar } = req.body;
+    const {
+      name,
+      firstName,
+      lastName,
+      phoneNumber,
+      bio,
+      spiritualFocus,
+      city,
+      country,
+      preferredReadingMode,
+      avatar,
+    } = req.body;
+
     let avatarUrl = req.user.avatar;
 
     if (req.file) {
@@ -147,10 +169,25 @@ export class AuthController {
       avatarUrl = avatar;
     }
 
+    const resolvedFirstName = firstName !== undefined ? firstName.trim() : req.user.firstName;
+    const resolvedLastName = lastName !== undefined ? lastName.trim() : req.user.lastName;
+    const resolvedName =
+      name !== undefined && name.trim()
+        ? name.trim()
+        : `${resolvedFirstName || ''} ${resolvedLastName || ''}`.trim() || req.user.name;
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
-        name: name || req.user.name,
+        name: resolvedName,
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        phoneNumber: phoneNumber !== undefined ? phoneNumber.trim() : req.user.phoneNumber,
+        bio: bio !== undefined ? bio : req.user.bio,
+        spiritualFocus: spiritualFocus !== undefined ? spiritualFocus : req.user.spiritualFocus,
+        city: city !== undefined ? city : req.user.city,
+        country: country !== undefined ? country : req.user.country,
+        preferredReadingMode: preferredReadingMode !== undefined ? preferredReadingMode : req.user.preferredReadingMode,
         avatar: avatarUrl,
       },
       { new: true, runValidators: true }
@@ -159,13 +196,22 @@ export class AuthController {
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully.',
-      user: {
-        id: updatedUser?._id,
-        name: updatedUser?.name,
-        email: updatedUser?.email,
-        role: updatedUser?.role,
-        avatar: updatedUser?.avatar,
-      },
+      user: formatUserResponse(updatedUser),
+    });
+  }
+
+  static async deleteAccount(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Not authenticated.' });
+      return;
+    }
+
+    await User.findByIdAndDelete(req.user._id);
+    res.clearCookie('token');
+
+    res.status(200).json({
+      success: true,
+      message: 'Your account and personal data have been permanently deleted.',
     });
   }
 

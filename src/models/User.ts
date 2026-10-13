@@ -3,6 +3,14 @@ import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
   name: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  bio?: string;
+  spiritualFocus?: string;
+  city?: string;
+  country?: string;
+  preferredReadingMode?: string;
   email: string;
   password?: string;
   role: 'user' | 'admin';
@@ -20,6 +28,44 @@ const UserSchema: Schema<IUser> = new Schema(
       required: [true, 'Name is required'],
       trim: true,
       maxlength: 100,
+    },
+    firstName: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: 50,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: 50,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    bio: {
+      type: String,
+      default: '',
+      maxlength: 500,
+    },
+    spiritualFocus: {
+      type: String,
+      default: 'Quranic Wisdom & Classical Philosophy',
+    },
+    city: {
+      type: String,
+      default: '',
+    },
+    country: {
+      type: String,
+      default: '',
+    },
+    preferredReadingMode: {
+      type: String,
+      default: 'paper',
     },
     email: {
       type: String,

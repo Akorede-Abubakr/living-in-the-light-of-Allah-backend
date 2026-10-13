@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Order } from '../models/Order';
 import { AuthRequest } from '../middlewares/auth';
 import { PaymentService } from '../services/payment.service';
+import { Page } from '../models/Page';
 
 export class OrderController {
   /**
@@ -17,6 +18,12 @@ export class OrderController {
 
     if (!bookIds || !Array.isArray(bookIds) || bookIds.length === 0) {
       res.status(400).json({ success: false, message: 'bookIds array is required' });
+      return;
+    }
+
+    const contentAvailable = await Promise.all(bookIds.map((book: string) => Page.exists({ book })));
+    if (contentAvailable.some(page => !page)) {
+      res.status(409).json({ success: false, message: 'A selected book is awaiting its manuscript. Please purchase it when reading pages are available.' });
       return;
     }
 

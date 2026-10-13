@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import { config } from './config/env';
+import { createCorsOptions } from './config/cors';
 import { connectDB } from './config/db';
 import apiRoutes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
@@ -26,30 +27,12 @@ app.use(
 );
 
 // CORS configuration for Frontend and Admin
-const allowedOrigins = [
-  config.frontendUrl,
-  config.adminUrl,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Permissive in dev
-      }
-    },
-    credentials: true,
-  })
-);
+app.use(cors(createCorsOptions(config.nodeEnv, config.frontendUrl, config.adminUrl)));
 
 // Parsers
-app.use(express.json({ limit: '10mb' }));
+const jsonParser = express.json({ limit: '10mb' });
+// Chat authenticates before parsing and applies its own smaller body limit.
+app.use((req, res, next) => /^\/api\/ai\/(chat\/?$|books(?:\/|$))/i.test(req.path) ? next() : jsonParser(req, res, next));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 

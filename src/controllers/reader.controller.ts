@@ -6,8 +6,35 @@ import { Bookmark } from '../models/Bookmark';
 import { ReadingProgress } from '../models/ReadingProgress';
 import { AuthRequest } from '../middlewares/auth';
 import { AccessControlService } from '../services/access.service';
+import { BookIndex } from '../models/BookIntelligence';
+import { renderStoredPage } from '../services/reader-document.service';
 
 export class ReaderController {
+  static async getOriginalPage(req: AuthRequest, res: Response): Promise<void> {
+    res.setHeader('Cache-Control', 'private, no-store');
+    const pageNumber = Number(req.params.pageNumber);
+    if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+      res.status(400).json({ message: 'Invalid page number' }); return;
+    }
+    try {
+      const access = await AccessControlService.checkBookAccess(req.user?._id?.toString(), req.params.bookId);
+      if (!access.hasFullAccess && pageNumber > access.previewLimit) {
+        res.status(403).json({ previewExceeded: true, message: 'Purchase this book to continue reading.' }); return;
+      }
+      const index = await BookIndex.findOne({ book: req.params.bookId }).lean();
+      const fileId = index?.readerFileId || (index?.source === 'pdf' ? index.fileId : undefined);
+      if (!fileId) {
+        res.status(409).json({ message: 'The publisher must upload a PDF edition to display the original pages.' }); return;
+      }
+      if (!await Page.exists({ book: req.params.bookId, pageNumber })) {
+        res.status(404).json({ message: 'Page not found' }); return;
+      }
+      const image = await renderStoredPage(fileId, pageNumber);
+      res.type('png').send(image);
+    } catch (error: any) {
+      res.status(error.status === 503 ? 503 : 422).json({ message: 'Could not display the original page. Please retry.' });
+    }
+  }
   /**
    * Returns book reader metadata, chapter outline, access state, bookmarks & saved progress
    */
@@ -50,6 +77,7 @@ export class ReaderController {
 
     // Get total pages in database
     const totalPages = await Page.countDocuments({ book: bookId });
+    const index = await BookIndex.findOne({ book: bookId }).select('source fileId readerFileId version').lean();
 
     // Fetch user-specific bookmarks and reading progress if authenticated
     let bookmarks: any[] = [];
@@ -71,13 +99,15 @@ export class ReaderController {
           coverImage: book.coverImage,
           price: book.price,
           currency: book.currency,
-          pageCount: totalPages || book.pageCount,
+          pageCount: totalPages,
         },
         hasFullAccess: access.hasFullAccess,
         isPurchased: access.isPurchased,
         isAdmin: access.isAdmin,
         previewLimit: access.previewLimit,
-        totalPages: totalPages || book.pageCount,
+        totalPages,
+        originalPagesAvailable: !!(index?.readerFileId || (index?.source === 'pdf' && index.fileId)),
+        documentVersion: index?.version || '',
         chapters: chaptersStructure,
         bookmarks,
         savedProgress: progress

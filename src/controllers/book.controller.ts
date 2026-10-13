@@ -8,6 +8,7 @@ import { AuthRequest } from '../middlewares/auth';
 import { AccessControlService } from '../services/access.service';
 import { StorageService } from '../services/storage.service';
 import { ReadingProgress } from '../models/ReadingProgress';
+import { deleteBookIntelligence } from '../services/book-index.service';
 
 export class BookController {
   static async getBooks(req: Request, res: Response): Promise<void> {
@@ -99,6 +100,8 @@ export class BookController {
         break;
     }
 
+    // Resolve ties consistently so books do not repeat or disappear across pages.
+    sortOptions._id = -1;
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.max(1, Math.min(50, parseInt(limit as string, 10) || 12));
     const skip = (pageNum - 1) * limitNum;
@@ -360,6 +363,7 @@ export class BookController {
       Page.deleteMany({ book: id }),
       Review.deleteMany({ book: id }),
       ReadingProgress.deleteMany({ book: id }),
+      deleteBookIntelligence(id),
       Book.findByIdAndDelete(id),
       StorageService.deleteFile(book.coverImage),
     ]);

@@ -5,12 +5,21 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
+    "check:chat": "npm run build && node scripts/check-chat-connection.cjs",
+    "test:chat:live": "npm run build && node scripts/smoke-chat-live.cjs",
+    "test:ai": "npm run build && node --test tests/ai.test.cjs tests/chat.test.cjs tests/cors.test.cjs tests/db-logging.test.cjs tests/book-upload.test.cjs",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed": "ts-node-dev --transpile-only src/scripts/seed.ts",
-    "test:e2e": "ts-node-dev --transpile-only src/scripts/test-e2e.ts"
+    "test:e2e": "ts-node-dev --transpile-only src/scripts/test-e2e.ts",
+    "install:all": "npm --prefix . install && npm --prefix ../frontend install && npm --prefix ../admin install",
+    "dev:backend": "npm --prefix . run dev",
+    "dev:frontend": "npm --prefix ../frontend run dev",
+    "dev:admin": "npm --prefix ../admin run dev",
+    "build:all": "npm --prefix . run build && npm --prefix ../frontend run build && npm --prefix ../admin run build"
   },
   "dependencies": {
+    "@napi-rs/canvas": "0.1.100",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
@@ -19,11 +28,14 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
+    "htmlparser2": "10.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "1.11.0",
     "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
-    "muslim-guardian-root": "file:.."
+    "multer": "2.2.0",
+    "pdfjs-dist": "5.4.624",
+    "word-extractor": "1.0.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

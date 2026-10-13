@@ -8,8 +8,8 @@ export const connectDB = async (): Promise<void> => {
     });
     console.log(`[Database] MongoDB Connected: ${conn.connection.host} (${conn.connection.name})`);
   } catch (error) {
-    console.error(`[Database] MongoDB Connection Error:`, error);
-    console.log(`[Database] Tip: Ensure MongoDB service or local mongod is running on ${config.mongoUri}`);
+    // Connection strings and driver exceptions can contain database passwords.
+    console.error('[Database] Connection failed. Check MONGODB_URI and database network access.');
     // Do not terminate process immediately in development so server can report status
   }
 };
